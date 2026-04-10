@@ -116,3 +116,35 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+import uuid
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
+def generate_uuid():
+    return str(uuid.uuid4())
+
+class User(db.Model):
+    __tablename__ = 'users'
+    
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    documents = db.relationship('Document', backref='owner', lazy=True, cascade='all, delete-orphan')
+
+class Document(db.Model):
+    __tablename__ = 'documents'
+    
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
+    filename = db.Column(db.String(255), nullable=False)
+    file_data = db.Column(db.LargeBinary, nullable=False)
+    mimetype = db.Column(db.String(100), nullable=False)
+    summary_text = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
